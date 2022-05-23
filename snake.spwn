@@ -1,0 +1,116 @@
+extract obj_props
+gs = import gamescene
+
+directionGroups = [5g, 6g, 7g, 8g]
+player = 10g
+direction = counter(0)
+let snake_parts = []
+let snake_colliders = []
+followPlayer = 1g
+active = counter(0)
+length = counter(3)
+
+
+$.add(lock_to_player_trigger(followPlayer, lock_x = true, lock_y = false))
+followPlayer.move(-50, 0)
+
+
+// Create possible new snake body and colliders for that
+for i in 0..20 { snake_parts.push(?g) }
+for i in 0..20 { snake_colliders.push(?g) }
+for i in snake_parts {
+    let my_object = obj {
+        OBJ_ID: 5,
+        X: 300,
+        Y: -90,
+        SCALING: 1,
+    }
+    my_object.add_groups(i)
+    my_object.add_groups(1g)
+
+    $.add(my_object.with(SCALING, 1))  
+}
+
+for i in snake_colliders {
+    let collider = obj {
+        OBJ_ID: 1816,
+        X: 300,
+        Y: -90,
+        BLOCK_A: 50b,
+        SCALING: 0.5,
+        DYNAMIC_BLOCK: true,
+
+    }
+    collider.add_groups(i)
+    collider.add_groups(1g)
+    collider.add_groups(996g)
+    $.add(collider);
+}
+
+// Create collider counters
+apple = 4g
+on_apple = counter(10b.create_tracker_item(11b))
+on_self = counter(10b.create_tracker_item(50b))
+// score
+$.add(length.to_obj().with(obj_props.GROUPS, 1g).with(obj_props.Y, 50))
+
+
+// On change selector
+on(gs.button_a(), !{
+
+    direction += 1
+    if direction >= 4 {
+        direction = 0
+    }
+    2g.move_to(directionGroups[direction.to_const(0..directionGroups.length)])
+    2g.move(0, 0, 0)
+})
+on(gs.button_b(), !{
+    // Set the current selected to the active direction
+
+    active = direction.clone()
+    3g.move_to(directionGroups[active.to_const(0..directionGroups.length)])
+
+})
+
+-> while_loop(() => true, () {
+
+    if on_apple == 1 { // Player eat apple counter
+        ->apple.move_to(20g)
+        ->apple.move(10, 10, 0)
+        length += 1
+    }
+
+    if on_self == 1 { // Player collides with wall or self
+        ->40g.move(-200, 0, 1) // This is just a block that kills the player
+    }
+
+
+    // Move player
+    for i in length.to_const(0..15)..1 {
+        ->snake_parts[i].move_to(snake_parts[i - 1])
+        ->snake_colliders[i].move_to(snake_parts[i - 1])
+    }
+    ->snake_parts[0].move_to(10g)
+    ->snake_colliders[0].move_to(10g)
+    if active == 0 {
+        ->10g.move(0, 10)
+        ->9g.move(0, 10)
+    }
+    if active == 1 {
+        ->10g.move(10, 0)
+        ->9g.move(10, 0)
+    }
+    if active == 2 {
+        ->10g.move(0, -10)
+        ->9g.move(0, -10)
+    }
+    if active == 3 {
+        ->10g.move(-10, 0)
+        ->9g.move(-10, 0)
+    }
+    wait(1)
+    
+
+})
+
